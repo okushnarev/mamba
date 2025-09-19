@@ -16,6 +16,7 @@ def parse_args():
     parser.add_argument('--env', type=str, default="flatland", help='Flatland or SMAC env')
     parser.add_argument('--env_name', type=str, default="5_agents", help='Specific setting')
     parser.add_argument('--n_workers', type=int, default=2, help='Number of workers')
+    parser.add_argument('--seed', type=int, default=1, help='Random seed')
     return parser.parse_args()
 
 
@@ -72,8 +73,8 @@ def prepare_flatland_configs(env_name):
 
 
 if __name__ == "__main__":
-    RANDOM_SEED = 23
     args = parse_args()
+    RANDOM_SEED = args.seed
     if args.env == Env.FLATLAND:
         configs = prepare_flatland_configs(args.env_name)
     elif args.env == Env.STARCRAFT:
