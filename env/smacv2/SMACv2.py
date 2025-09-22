@@ -131,7 +131,7 @@ class SMACv2:
             obs = self._add_agent_id_to_obs(obs)
 
         # Format rewards for each agent
-        rewards = [[reward]] * self.n_agents
+        rewards = [reward] * self.n_agents
 
         # Pass additional info
         info["truncated"] = False
