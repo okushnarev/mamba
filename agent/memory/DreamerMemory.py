@@ -18,7 +18,7 @@ class DreamerMemory:
         self.observations = np.empty((self.capacity, n_agents, self.obs_size), dtype=np.float32)
         self.actions = np.empty((self.capacity, n_agents, self.action_size), dtype=np.float32)
         self.av_actions = np.empty((self.capacity, n_agents, self.action_size),
-                                   dtype=np.float32) if env_type == Env.STARCRAFT else None
+                                   dtype=np.float32) if env_type == Env.STARCRAFT or env_type == Env.SMACV2 else None
         self.rewards = np.empty((self.capacity, n_agents, 1), dtype=np.float32)
         self.dones = np.empty((self.capacity, n_agents, 1), dtype=np.float32)
         self.fake = np.empty((self.capacity, n_agents, 1), dtype=np.float32)
@@ -34,7 +34,15 @@ class DreamerMemory:
             self.observations[self.next_idx] = obs[i]
             self.actions[self.next_idx] = action[i]
             if av_action is not None:
-                self.av_actions[self.next_idx] = av_action[i]
+                try:
+                    self.av_actions[self.next_idx] = av_action[i]
+                except IndexError as e:
+                    print(f'CAUGHT ERROR: {e}')
+                    print(f'i={i}, len(obs)={len(obs)}, next_idx={self.next_idx}')
+                    print(f'av_action = {av_action.shape}')
+                    print(f'self.av_actions = {self.av_actions.shape}')
+                    raise e
+
             self.rewards[self.next_idx] = reward[i]
             self.dones[self.next_idx] = done[i]
             self.fake[self.next_idx] = fake[i]

@@ -19,7 +19,7 @@ class DreamerWorker:
         self.env_type = env_config.ENV_TYPE
 
     def _check_handle(self, handle):
-        if self.env_type == Env.STARCRAFT:
+        if self.env_type == Env.STARCRAFT or self.env_type == Env.SMACV2:
             return self.done[handle] == 0
         else:
             return self.env.agents[handle].status in (RailAgentStatus.ACTIVE, RailAgentStatus.READY_TO_DEPART) \
@@ -79,7 +79,7 @@ class DreamerWorker:
         return torch.cat(aug).unsqueeze(0)
 
     def _check_termination(self, info, steps_done):
-        if self.env_type == Env.STARCRAFT:
+        if self.env_type == Env.STARCRAFT or self.env_type == Env.SMACV2:
             return "episode_limit" not in info
         else:
             return steps_done < self.env.max_time_steps
@@ -116,7 +116,7 @@ class DreamerWorker:
                              "reward": torch.zeros(1, self.env.n_agents, 1),
                              "fake": torch.ones(1, self.env.n_agents, 1),
                              "done": torch.ones(1, self.env.n_agents, 1),
-                             "avail_action": torch.ones_like(actions) if self.env_type == Env.STARCRAFT else None}
+                             "avail_action": torch.ones_like(actions) if self.env_type == Env.STARCRAFT or self.env_type == Env.SMACV2 else None}
                     self.controller.update_buffer(items)
                     self.controller.update_buffer(items)
                 break

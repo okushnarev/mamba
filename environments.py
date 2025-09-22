@@ -4,6 +4,7 @@ from enum import Enum
 class Env(str, Enum):
     FLATLAND = "flatland"
     STARCRAFT = "starcraft"
+    SMACV2 = "smacv2"
 
 
 class FlatlandType(str, Enum):

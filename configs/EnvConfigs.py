@@ -2,7 +2,8 @@ from configs.Config import Config
 from env.flatland.EnvCurriculum import EnvCurriculum, EnvCurriculumSample, EnvCurriculumPrioritizedSample
 from env.flatland.Flatland import FlatlandWrapper, Flatland
 from env.flatland.GreedyFlatland import GreedyFlatland
-from env.starcraft.StarCraft import StarCraft
+
+
 
 
 class EnvConfig(Config):
@@ -19,7 +20,18 @@ class StarCraftConfig(EnvConfig):
         self.env_name = env_name
 
     def create_env(self):
+        from env.starcraft.StarCraft import StarCraft
         return StarCraft(self.env_name)
+
+class SMACv2Config(EnvConfig):
+
+    def __init__(self, env_name, seed):
+        self.env_name = env_name
+        self.seed = seed
+
+    def create_env(self):
+        from env.smacv2.SMACv2 import SMACv2
+        return SMACv2(self.env_name, self.seed)
 
 
 class FlatlandConfig(EnvConfig):
