@@ -26,20 +26,21 @@ class DreamerRunner:
     def __init__(self, env_config, learner_config, controller_config, n_workers):
         self.n_workers = n_workers
         self.learner = learner_config.create_learner()
+        self.logger = self.learner.logger
         self.server = DreamerServer(n_workers, env_config, controller_config, self.learner.params())
 
     def run(self, max_steps=10 ** 10, max_episodes=10 ** 10):
         cur_steps, cur_episode = 0, 0
 
-        wandb.define_metric("steps")
-        wandb.define_metric("reward", step_metric="steps")
+        self.logger.define_metric("steps")
+        self.logger.define_metric("reward", step_metric="steps")
 
         while True:
             rollout, info = self.server.run()
             self.learner.step(rollout)
             cur_steps += info["steps_done"]
             cur_episode += 1
-            wandb.log({'reward': info["reward"], 'steps': cur_steps})
+            self.logger.log(dict(reward=info["reward"]), step=cur_steps)
 
             print(cur_episode, self.learner.total_samples, info["reward"])
             if cur_episode >= max_episodes or cur_steps >= max_steps:

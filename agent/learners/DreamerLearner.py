@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
+
 from agent.memory.DreamerMemory import DreamerMemory
 from agent.models.DreamerModel import DreamerModel
 from agent.optim.loss import model_loss, actor_loss, value_loss, actor_rollout
@@ -12,6 +13,7 @@ from agent.optim.utils import advantage
 from environments import Env
 from networks.dreamer.action import Actor
 from networks.dreamer.critic import AugmentedCritic
+from utils.logger import UnifiedLogger
 
 
 def orthogonal_init(tensor, gain=1):
@@ -68,9 +70,7 @@ class DreamerLearner:
         self.init_optimizers()
         self.n_agents = 2
         Path(config.LOG_FOLDER).mkdir(parents=True, exist_ok=True)
-        global wandb
-        import wandb
-        wandb.init(dir=config.LOG_FOLDER)
+        self.logger = UnifiedLogger(config)
 
     def init_optimizers(self):
         self.model_optimizer = torch.optim.Adam(self.model.parameters(), lr=self.config.MODEL_LR)
@@ -111,7 +111,7 @@ class DreamerLearner:
     def train_model(self, samples):
         self.model.train()
         loss = model_loss(self.config, self.model, samples['observation'], samples['action'], samples['av_action'],
-                          samples['reward'], samples['done'], samples['fake'], samples['last'])
+                          samples['reward'], samples['done'], samples['fake'], samples['last'], logger=self.logger)
         self.apply_optimizer(self.model_optimizer, self.model, loss, self.config.GRAD_CLIP)
         self.model.eval()
 
@@ -122,11 +122,12 @@ class DreamerLearner:
                                                                             self.actor,
                                                                             self.critic if self.config.ENV_TYPE == Env.STARCRAFT
                                                                             else self.old_critic,
-                                                                            self.config)
+                                                                            self.config,
+                                                                            logger=self.logger)
         adv = returns.detach() - self.critic(imag_feat).detach()
         if self.config.ENV_TYPE == Env.STARCRAFT:
             adv = advantage(adv)
-        wandb.log({'Agent/Returns': returns.mean()})
+        self.logger.log({'Agent/Returns': returns.mean()})
         for epoch in range(self.config.PPO_EPOCHS):
             inds = np.random.permutation(actions.shape[0])
             step = 2000
@@ -134,12 +135,12 @@ class DreamerLearner:
                 self.cur_update += 1
                 idx = inds[i:i + step]
                 loss = actor_loss(imag_feat[idx], actions[idx], av_actions[idx] if av_actions is not None else None,
-                                  old_policy[idx], adv[idx], self.actor, self.entropy)
+                                  old_policy[idx], adv[idx], self.actor, self.entropy, logger=self.logger)
                 self.apply_optimizer(self.actor_optimizer, self.actor, loss, self.config.GRAD_CLIP_POLICY)
                 self.entropy *= self.config.ENTROPY_ANNEALING
                 val_loss = value_loss(self.critic, imag_feat[idx], returns[idx])
                 if np.random.randint(20) == 9:
-                    wandb.log({'Agent/val_loss': val_loss, 'Agent/actor_loss': loss})
+                    self.logger.log({'Agent/val_loss': val_loss, 'Agent/actor_loss': loss})
                 self.apply_optimizer(self.critic_optimizer, self.critic, val_loss, self.config.GRAD_CLIP_POLICY)
                 if self.config.ENV_TYPE == Env.FLATLAND and self.cur_update % self.config.TARGET_UPDATE == 0:
                     self.old_critic = deepcopy(self.critic)

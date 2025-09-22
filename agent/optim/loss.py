@@ -9,7 +9,7 @@ from agent.utils.params import FreezeParameters
 from networks.dreamer.rnns import rollout_representation, rollout_policy
 
 
-def model_loss(config, model, obs, action, av_action, reward, done, fake, last):
+def model_loss(config, model, obs, action, av_action, reward, done, fake, last, logger=None):
     time_steps = obs.shape[0]
     batch_size = obs.shape[1]
     n_agents = obs.shape[2]
@@ -35,15 +35,15 @@ def model_loss(config, model, obs, action, av_action, reward, done, fake, last):
     div = state_divergence_loss(prior, post, config)
 
     model_loss = div + reward_loss + dis_loss + reconstruction_loss + pcont_loss + av_action_loss
-    if np.random.randint(20) == 4:
-        wandb.log({'Model/reward_loss': reward_loss, 'Model/div': div, 'Model/av_action_loss': av_action_loss,
+    if logger is not None and np.random.randint(20) == 4:
+        logger.log({'Model/reward_loss': reward_loss, 'Model/div': div, 'Model/av_action_loss': av_action_loss,
                    'Model/reconstruction_loss': reconstruction_loss, 'Model/info_loss': dis_loss,
                    'Model/pcont_loss': pcont_loss})
 
     return model_loss
 
 
-def actor_rollout(obs, action, last, model, actor, critic, config):
+def actor_rollout(obs, action, last, model, actor, critic, config, logger):
     n_agents = obs.shape[2]
     with FreezeParameters([model]):
         embed = model.observation_encoder(obs.reshape(-1, n_agents, obs.shape[-1]))
@@ -56,22 +56,23 @@ def actor_rollout(obs, action, last, model, actor, critic, config):
     imag_feat = items["imag_states"].get_features()
     imag_rew_feat = torch.cat([items["imag_states"].stoch[:-1], items["imag_states"].deter[1:]], -1)
     returns = critic_rollout(model, critic, imag_feat, imag_rew_feat, items["actions"],
-                             items["imag_states"].map(lambda x: x.reshape(-1, n_agents, x.shape[-1])), config)
+                             items["imag_states"].map(lambda x: x.reshape(-1, n_agents, x.shape[-1])), config, logger)
     output = [items["actions"][:-1].detach(),
               items["av_actions"][:-1].detach() if items["av_actions"] is not None else None,
               items["old_policy"][:-1].detach(), imag_feat[:-1].detach(), returns.detach()]
     return [batch_multi_agent(v, n_agents) for v in output]
 
 
-def critic_rollout(model, critic, states, rew_states, actions, raw_states, config):
+def critic_rollout(model, critic, states, rew_states, actions, raw_states, config, logger=None):
     with FreezeParameters([model, critic]):
         imag_reward = calculate_next_reward(model, actions, raw_states)
         imag_reward = imag_reward.reshape(actions.shape[:-1]).unsqueeze(-1).mean(-2, keepdim=True)[:-1]
         value = critic(states)
         discount_arr = model.pcont(rew_states).mean
-        wandb.log({'Value/Max reward': imag_reward.max(), 'Value/Min reward': imag_reward.min(),
-                   'Value/Reward': imag_reward.mean(), 'Value/Discount': discount_arr.mean(),
-                   'Value/Value': value.mean()})
+        if logger is not None:
+            logger.log({'Value/Max reward': imag_reward.max(), 'Value/Min reward': imag_reward.min(),
+                       'Value/Reward': imag_reward.mean(), 'Value/Discount': discount_arr.mean(),
+                       'Value/Value': value.mean()})
     returns = compute_return(imag_reward, value[:-1], discount_arr, bootstrap=value[-1], lmbda=config.DISCOUNT_LAMBDA,
                              gamma=config.GAMMA)
     return returns
@@ -91,7 +92,7 @@ def calculate_next_reward(model, actions, states):
     return calculate_reward(model, imag_rew_feat)
 
 
-def actor_loss(imag_states, actions, av_actions, old_policy, advantage, actor, ent_weight):
+def actor_loss(imag_states, actions, av_actions, old_policy, advantage, actor, ent_weight, logger=None):
     _, new_policy = actor(imag_states)
     if av_actions is not None:
         new_policy[av_actions == 0] = -1e10
@@ -99,8 +100,8 @@ def actor_loss(imag_states, actions, av_actions, old_policy, advantage, actor, e
     rho = (F.log_softmax(new_policy, dim=-1).gather(2, actions) -
            F.log_softmax(old_policy, dim=-1).gather(2, actions)).exp()
     ppo_loss, ent_loss = calculate_ppo_loss(new_policy, rho, advantage)
-    if np.random.randint(10) == 9:
-        wandb.log({'Policy/Entropy': ent_loss.mean(), 'Policy/Mean action': actions.float().mean()})
+    if logger is not None and np.random.randint(10) == 9:
+        logger.log({'Policy/Entropy': ent_loss.mean(), 'Policy/Mean action': actions.float().mean()})
     return (ppo_loss + ent_loss.unsqueeze(-1) * ent_weight).mean()
 
 

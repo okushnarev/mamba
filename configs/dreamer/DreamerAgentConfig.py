@@ -10,8 +10,9 @@ RSSM_STATE_MODE = 'discrete'
 
 
 class DreamerConfig(Config):
-    def __init__(self):
+    def __init__(self, exp_name=None):
         super().__init__()
+        self.EXP_NAME = exp_name if exp_name is not None else 'exp_noname'
         self.HIDDEN = 256
         self.MODEL_HIDDEN = 256
         self.EMBED = 256
@@ -34,7 +35,8 @@ class DreamerConfig(Config):
         self.DISCOUNT = 0.99
         self.DISCOUNT_LAMBDA = 0.95
         self.IN_DIM = 30
-        self.LOG_FOLDER = 'wandb/'
+        self.LOG_FOLDER = 'logs/'
+        self.USE_WANDB = False
 
 
 @dataclass

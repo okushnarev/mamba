@@ -3,7 +3,7 @@ import copy
 
 from env.flatland.Flatland import DelegatedAttribute, TrainAction
 from flatland.envs.agent_utils import RailAgentStatus
-from logger import log, init_logger
+from utils import log, init_logger
 
 NUM_CPUS = 4
 ray.init(num_cpus=NUM_CPUS)

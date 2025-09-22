@@ -17,6 +17,7 @@ def parse_args():
     parser.add_argument('--env_name', type=str, default="5_agents", help='Specific setting')
     parser.add_argument('--n_workers', type=int, default=2, help='Number of workers')
     parser.add_argument('--seed', type=int, default=1, help='Random seed')
+    parser.add_argument('--exp_name', type=str, default='exp_base', help='Experiment name')
     return parser.parse_args()
 
 
@@ -38,8 +39,8 @@ def get_env_info_flatland(configs):
         config.ACTION_SIZE = FLATLAND_ACTION_SIZE
 
 
-def prepare_starcraft_configs(env_name):
-    agent_configs = [DreamerControllerConfig(), DreamerLearnerConfig()]
+def prepare_starcraft_configs(env_name, exp_name):
+    agent_configs = [DreamerControllerConfig(), DreamerLearnerConfig(exp_name=exp_name)]
     env_config = StarCraftConfig(env_name)
     get_env_info(agent_configs, env_config.create_env())
     return {"env_config": (env_config, 100),
@@ -49,7 +50,7 @@ def prepare_starcraft_configs(env_name):
             "obs_builder_config": None}
 
 
-def prepare_flatland_configs(env_name):
+def prepare_flatland_configs(env_name, exp_name):
     if env_name == FlatlandType.FIVE_AGENTS:
         env_config = SeveralAgents(RANDOM_SEED + 100)
     elif env_name == FlatlandType.TEN_AGENTS:
@@ -63,7 +64,7 @@ def prepare_flatland_configs(env_name):
     reward_config = RewardsComposerConfig((FinishRewardConfig(finish_value=10),
                                            NearRewardConfig(coeff=0.01),
                                            DeadlockPunishmentConfig(value=-5)))
-    agent_configs = [DreamerControllerConfig(), DreamerLearnerConfig()]
+    agent_configs = [DreamerControllerConfig(), DreamerLearnerConfig(exp_name=exp_name)]
     get_env_info_flatland(agent_configs)
     return {"env_config": (env_config, 100),
             "controller_config": agent_configs[0],
@@ -76,9 +77,9 @@ if __name__ == "__main__":
     args = parse_args()
     RANDOM_SEED = args.seed
     if args.env == Env.FLATLAND:
-        configs = prepare_flatland_configs(args.env_name)
+        configs = prepare_flatland_configs(args.env_name, args.exp_name)
     elif args.env == Env.STARCRAFT:
-        configs = prepare_starcraft_configs(args.env_name)
+        configs = prepare_starcraft_configs(args.env_name, args.exp_name)
     else:
         raise Exception("Unknown environment")
     configs["env_config"][0].ENV_TYPE = Env(args.env)

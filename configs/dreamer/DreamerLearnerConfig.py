@@ -3,8 +3,8 @@ from configs.dreamer.DreamerAgentConfig import DreamerConfig
 
 
 class DreamerLearnerConfig(DreamerConfig):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, exp_name=None):
+        super().__init__(exp_name)
         self.MODEL_LR = 2e-4
         self.ACTOR_LR = 5e-4
         self.VALUE_LR = 5e-4
