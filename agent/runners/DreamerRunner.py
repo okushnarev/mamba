@@ -44,7 +44,8 @@ class DreamerRunner:
             cur_episode += 1
             self.logger.log(
                 dict(
-                    reward=info["reward"]
+                    reward=info["reward"],
+                    mean_reward=info["mean_reward"],
                 ),
                 step=cur_steps
             )
