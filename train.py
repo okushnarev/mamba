@@ -18,11 +18,12 @@ def parse_args():
     parser.add_argument('--n_workers', type=int, default=2, help='Number of workers')
     parser.add_argument('--seed', type=int, default=1, help='Random seed')
     parser.add_argument('--exp_name', type=str, default='exp_base', help='Experiment name')
+    parser.add_argument('--serial_mode', action='store_true', default=False, help='Run RLlib in serial mode for debugging')
     return parser.parse_args()
 
 
-def train_dreamer(exp, n_workers):
-    runner = DreamerRunner(exp.env_config, exp.learner_config, exp.controller_config, n_workers)
+def train_dreamer(exp, n_workers, serial_mode):
+    runner = DreamerRunner(exp.env_config, exp.learner_config, exp.controller_config, n_workers, serial_mode)
     runner.run(exp.steps, exp.episodes)
 
 
@@ -95,4 +96,4 @@ if __name__ == "__main__":
                      controller_config=configs["controller_config"],
                      learner_config=configs["learner_config"])
 
-    train_dreamer(exp, n_workers=args.n_workers)
+    train_dreamer(exp, n_workers=args.n_workers, serial_mode=args.serial_mode)

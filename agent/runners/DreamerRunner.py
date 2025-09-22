@@ -5,8 +5,10 @@ from agent.workers.DreamerWorker import DreamerWorker
 
 
 class DreamerServer:
-    def __init__(self, n_workers, env_config, controller_config, model):
-        ray.init()
+    def __init__(self, n_workers, env_config, controller_config, model, serial_mode=False):
+        if serial_mode:
+            print('\tRlLib is set to DEBUG')
+        ray.init(local_mode=serial_mode)
 
         self.workers = [DreamerWorker.remote(i, env_config, controller_config) for i in range(n_workers)]
         self.tasks = [worker.run.remote(model) for worker in self.workers]
@@ -23,11 +25,11 @@ class DreamerServer:
 
 class DreamerRunner:
 
-    def __init__(self, env_config, learner_config, controller_config, n_workers):
+    def __init__(self, env_config, learner_config, controller_config, n_workers, serial_mode):
         self.n_workers = n_workers
         self.learner = learner_config.create_learner()
+        self.server = DreamerServer(n_workers, env_config, controller_config, self.learner.params(), serial_mode)
         self.logger = self.learner.logger
-        self.server = DreamerServer(n_workers, env_config, controller_config, self.learner.params())
 
     def run(self, max_steps=10 ** 10, max_episodes=10 ** 10):
         cur_steps, cur_episode = 0, 0
@@ -40,10 +42,14 @@ class DreamerRunner:
             self.learner.step(rollout)
             cur_steps += info["steps_done"]
             cur_episode += 1
-            self.logger.log(dict(reward=info["reward"]), step=cur_steps)
+            self.logger.log(
+                dict(
+                    reward=info["reward"]
+                ),
+                step=cur_steps
+            )
 
             print(cur_episode, self.learner.total_samples, info["reward"])
             if cur_episode >= max_episodes or cur_steps >= max_steps:
                 break
             self.server.append(info['idx'], self.learner.params())
-
