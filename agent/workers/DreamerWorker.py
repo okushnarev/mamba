@@ -92,12 +92,17 @@ class DreamerWorker:
         self.done = defaultdict(lambda: False)
 
         mean_reward = 0.0
+        battles_game = 0
+        battles_won = 0
 
         while True:
             steps_done += 1
             actions, obs, fakes, av_actions = self._select_actions(state)
             next_state, reward, done, info = self.env.step([action.argmax() for i, action in enumerate(actions)])
             mean_reward += reward[0]
+            battles_game += 1
+            battles_won += int(info['battle_won'])
+
             next_state, reward, done = self._wrap(deepcopy(next_state)), self._wrap(deepcopy(reward)), self._wrap(deepcopy(done))
             self.done = done
             self.controller.update_buffer({"action": actions,
@@ -128,10 +133,11 @@ class DreamerWorker:
             reward = sum(
                 [1 for agent in self.env.agents if agent.status == RailAgentStatus.DONE_REMOVED]) / self.env.n_agents
         else:
-            reward = 1. if 'battle_won' in info and info['battle_won'] else 0.
+            reward = 1. if info.get('battle_won', False) else 0.
 
         mean_reward /= steps_done
         return self.controller.dispatch_buffer(), {"idx": self.runner_handle,
                                                    "reward": reward,
                                                    "mean_reward": mean_reward,
+                                                   "win_rate": battles_won / battles_game,
                                                    "steps_done": steps_done}
