@@ -43,10 +43,11 @@ class DreamerRunner:
             cur_steps += info["steps_done"]
             cur_episode += 1
             self.logger.log(
-                dict(
-                    reward=info["reward"],
-                    mean_reward=info["mean_reward"],
-                ),
+                {
+                    'stats/reward':      info["reward"],
+                    'stats/mean_reward': info["mean_reward"],
+                    'stats/win_rate':    info["win_rate"],
+                },
                 step=cur_steps
             )
 
@@ -54,4 +55,3 @@ class DreamerRunner:
             if cur_episode >= max_episodes or cur_steps >= max_steps:
                 break
             self.server.append(info['idx'], self.learner.params())
-
