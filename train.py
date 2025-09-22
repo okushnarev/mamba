@@ -65,7 +65,7 @@ def prepare_flatland_configs(env_name, exp_name):
     reward_config = RewardsComposerConfig((FinishRewardConfig(finish_value=10),
                                            NearRewardConfig(coeff=0.01),
                                            DeadlockPunishmentConfig(value=-5)))
-    agent_configs = [DreamerControllerConfig(), DreamerLearnerConfig(exp_name=exp_name)]
+    agent_configs = [DreamerControllerConfig(), DreamerLearnerConfig()]
     get_env_info_flatland(agent_configs)
     return {"env_config": (env_config, 100),
             "controller_config": agent_configs[0],
