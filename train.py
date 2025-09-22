@@ -50,8 +50,8 @@ def prepare_starcraft_configs(env_name, exp_name):
             "reward_config": None,
             "obs_builder_config": None}
 
-def prepare_smacv2_configs(env_name, seed):
-    agent_configs = [DreamerControllerConfig(), DreamerLearnerConfig()]
+def prepare_smacv2_configs(env_name, exp_name, seed):
+    agent_configs = [DreamerControllerConfig(), DreamerLearnerConfig(exp_name=exp_name)]
     env_config = SMACv2Config(env_name, seed)
     get_env_info(agent_configs, env_config.create_env())
     return {"env_config": (env_config, 100),
@@ -92,7 +92,7 @@ if __name__ == "__main__":
     elif args.env == Env.STARCRAFT:
         configs = prepare_starcraft_configs(args.env_name, args.exp_name)
     elif args.env == Env.SMACV2:
-        configs = prepare_smacv2_configs(args.env_name, RANDOM_SEED)
+        configs = prepare_smacv2_configs(args.env_name, args.exp_name, RANDOM_SEED)
     else:
         raise Exception("Unknown environment")
     configs["env_config"][0].ENV_TYPE = Env(args.env)
