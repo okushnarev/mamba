@@ -21,7 +21,7 @@ class DreamerModel(nn.Module):
         self.reward_model = DenseModel(config.FEAT, 1, config.REWARD_LAYERS, config.REWARD_HIDDEN)
         self.pcont = DenseBinaryModel(config.FEAT, 1, config.PCONT_LAYERS, config.PCONT_HIDDEN)
 
-        if config.ENV_TYPE == Env.STARCRAFT:
+        if config.ENV_TYPE == Env.STARCRAFT or config.ENV_TYPE == Env.SMACV2:
             self.av_action = DenseBinaryModel(config.FEAT, config.ACTION_SIZE, config.PCONT_LAYERS, config.PCONT_HIDDEN)
         else:
             self.av_action = None

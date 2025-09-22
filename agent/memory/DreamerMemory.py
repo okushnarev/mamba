@@ -65,7 +65,7 @@ class DreamerMemory:
         observation = self.process_batch(self.observations, vec_idxs, batch_size)[1:]
         reward = self.process_batch(self.rewards, vec_idxs, batch_size)[:-1]
         action = self.process_batch(self.actions, vec_idxs, batch_size)[:-1]
-        av_action = self.process_batch(self.av_actions, vec_idxs, batch_size)[1:] if self.env_type == Env.STARCRAFT else None
+        av_action = self.process_batch(self.av_actions, vec_idxs, batch_size)[1:] if self.env_type == Env.STARCRAFT or self.env_type == Env.SMACV2 else None
         done = self.process_batch(self.dones, vec_idxs, batch_size)[:-1]
         fake = self.process_batch(self.fake, vec_idxs, batch_size)[1:]
         last = self.process_batch(self.last, vec_idxs, batch_size)[1:]

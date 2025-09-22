@@ -120,12 +120,12 @@ class DreamerLearner:
                                                                             samples['action'],
                                                                             samples['last'], self.model,
                                                                             self.actor,
-                                                                            self.critic if self.config.ENV_TYPE == Env.STARCRAFT
+                                                                            self.critic if self.config.ENV_TYPE == Env.STARCRAFT or self.config.ENV_TYPE == Env.SMACV2
                                                                             else self.old_critic,
                                                                             self.config,
                                                                             logger=self.logger)
         adv = returns.detach() - self.critic(imag_feat).detach()
-        if self.config.ENV_TYPE == Env.STARCRAFT:
+        if self.config.ENV_TYPE == Env.STARCRAFT or self.config.ENV_TYPE == Env.SMACV2:
             adv = advantage(adv)
         self.logger.log({'Agent/Returns': returns.mean()})
         for epoch in range(self.config.PPO_EPOCHS):
