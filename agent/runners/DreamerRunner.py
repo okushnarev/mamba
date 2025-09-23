@@ -1,7 +1,12 @@
+from pathlib import Path
+
+import numpy as np
 import ray
 import wandb
+from caffe2.python.fakelowp.test_utils import compute_ulp_error
 
 from agent.workers.DreamerWorker import DreamerWorker
+from utils.logger import UnifiedLogger
 
 
 class DreamerServer:
@@ -27,9 +32,14 @@ class DreamerRunner:
 
     def __init__(self, env_config, learner_config, controller_config, n_workers, serial_mode):
         self.n_workers = n_workers
+
+        Path(learner_config.LOG_FOLDER).mkdir(parents=True, exist_ok=True)
+        self.logger = UnifiedLogger(learner_config)
+
         self.learner = learner_config.create_learner()
+        self.learner.logger = self.logger
+
         self.server = DreamerServer(n_workers, env_config, controller_config, self.learner.params(), serial_mode)
-        self.logger = self.learner.logger
 
     def run(self, max_steps=10 ** 10, max_episodes=10 ** 10):
         cur_steps, cur_episode = 0, 0
@@ -41,10 +51,14 @@ class DreamerRunner:
         while True:
             rollout, info = self.server.run()
             self.learner.step(rollout)
+
             cur_steps += info["steps_done"]
             cur_episode += 1
+            self.logger.current_step = cur_steps
+
             battles_won += info["reward"]
             win_rate = battles_won / cur_episode
+
             self.logger.log(
                 {
                     'stats/reward':      info["reward"],
@@ -54,7 +68,7 @@ class DreamerRunner:
                 step=cur_steps
             )
 
-            print(cur_episode, self.learner.total_samples, info["reward"], win_rate)
+            print(cur_episode, self.learner.total_samples, info["reward"], np.round(win_rate, 4))
             if cur_episode >= max_episodes or cur_steps >= max_steps:
                 break
             self.server.append(info['idx'], self.learner.params())

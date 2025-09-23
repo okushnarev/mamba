@@ -24,6 +24,7 @@ class UnifiedLogger:
         # Initialize TensorBoard SummaryWriter
         tb_log_dir = os.path.join(config.LOG_FOLDER, 'tb', self.config.EXP_NAME)
         self.writer = SummaryWriter(log_dir=tb_log_dir)
+        self.current_step = 0
         print(f"TensorBoard logs will be saved to: {tb_log_dir}")
 
     def log(self, data_dict, step=None):
@@ -34,6 +35,8 @@ class UnifiedLogger:
             data_dict (dict): A dictionary of {'metric_name': value}.
             step (int): The current step or epoch to log against.
         """
+
+        step = step or self.current_step
         # Log to wandb
         if self.config.USE_WANDB:
             wandb.log(data_dict)

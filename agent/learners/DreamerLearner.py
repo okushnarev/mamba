@@ -69,8 +69,7 @@ class DreamerLearner:
         self.total_samples = 0
         self.init_optimizers()
         self.n_agents = 2
-        Path(config.LOG_FOLDER).mkdir(parents=True, exist_ok=True)
-        self.logger = UnifiedLogger(config)
+        self.logger = None
 
     def init_optimizers(self):
         self.model_optimizer = torch.optim.Adam(self.model.parameters(), lr=self.config.MODEL_LR)
