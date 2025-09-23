@@ -37,21 +37,24 @@ class DreamerRunner:
         self.logger.define_metric("steps")
         self.logger.define_metric("reward", step_metric="steps")
 
+        battles_won = 0
         while True:
             rollout, info = self.server.run()
             self.learner.step(rollout)
             cur_steps += info["steps_done"]
             cur_episode += 1
+            battles_won += info["reward"]
+            win_rate = battles_won / cur_episode
             self.logger.log(
                 {
                     'stats/reward':      info["reward"],
                     'stats/mean_reward': info["mean_reward"],
-                    'stats/win_rate':    info["win_rate"],
+                    'stats/win_rate':    win_rate,
                 },
                 step=cur_steps
             )
 
-            print(cur_episode, self.learner.total_samples, info["reward"])
+            print(cur_episode, self.learner.total_samples, info["reward"], win_rate)
             if cur_episode >= max_episodes or cur_steps >= max_steps:
                 break
             self.server.append(info['idx'], self.learner.params())
